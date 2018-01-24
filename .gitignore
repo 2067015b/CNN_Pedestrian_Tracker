@@ -35,6 +35,10 @@ wheels/
 pip-log.txt
 pip-delete-this-directory.txt
 
+# Datasets
+*.mat
+*.h5
+
 # Unit test / coverage reports
 htmlcov/
 .tox/
