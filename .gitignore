@@ -103,3 +103,7 @@ ENV/
 
 # mypy
 .mypy_cache/
+.idea/
+data/
+condensation/sequence/
+*.zip

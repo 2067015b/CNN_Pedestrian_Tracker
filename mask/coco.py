@@ -45,9 +45,9 @@ import zipfile
 import urllib.request
 import shutil
 
-from config import Config
-import utils
-import model as modellib
+from mask.config import Config
+import mask.utils as utils
+import mask.model as modellib
 
 # Root directory of the project
 ROOT_DIR = os.getcwd()
