@@ -32,6 +32,7 @@
 import cv2
 from condensation.Rectangle import Rectangle
 from condensation.ColorObjectPFTracker import ColorObjectPFTracker
+from Config import FRAME_WIDTH
 
 """ This sample application uses particle filter to track an object in a video
 using a color histogram model. The user can draw a bounding box in the beginning
@@ -103,14 +104,13 @@ def get_predictions_for_frame(frame_0, frame_1, detections):
     global color_tracker
 
     # The frame is rescaled to have the width of 640 pixels
-    frame_width = 640
-    rescale_factor = float(frame_width) / frame_0.shape[1]
+    rescale_factor = float(FRAME_WIDTH) / frame_0.shape[1]
     frame_height = int(frame_0.shape[0] * rescale_factor)
 
     if not color_tracker:
         lower_bounds = [0, 0]
-        upper_bounds = [frame_width, frame_height]
-        color_tracker = init_particle_filter((frame_width, frame_height),
+        upper_bounds = [FRAME_WIDTH, frame_height]
+        color_tracker = init_particle_filter((FRAME_WIDTH, frame_height),
                                              lower_bounds, upper_bounds)
 
     # Variables for computing the color histogram model
@@ -121,12 +121,13 @@ def get_predictions_for_frame(frame_0, frame_1, detections):
 
     particle_initialization_method = 'gaussian'
 
-    output_frame = cv2.resize(frame_0, (frame_width, frame_height))
+    output_frame = cv2.resize(frame_0, (FRAME_WIDTH, frame_height))
 
     predictions = []
 
     for detection in detections:
 
+        detection = detection.get_detections()
 
         model_objectBB = Rectangle(
             detection[0], detection[1],
@@ -134,23 +135,23 @@ def get_predictions_for_frame(frame_0, frame_1, detections):
             detection[3] - detection[1])
 
         # The model is only learned once in the beginning
-        if not model_built:
-            hsv_img = cv2.cvtColor(output_frame, cv2.COLOR_BGR2HSV)
+        # if not model_built:
+        hsv_img = cv2.cvtColor(output_frame, cv2.COLOR_BGR2HSV)
 
 
-            color_tracker.init_color_particles(
-                particle_initialization_method, model_objectBB.centroid(),
-                [5.0, 5.0])
-            color_tracker.init_object_histogram_model(
-                hsv_img, model_objectBB, channels, mask, numBins,
-                intervals)
+        color_tracker.init_color_particles(
+            particle_initialization_method, model_objectBB.centroid(),
+            [5.0, 5.0])
+        color_tracker.init_object_histogram_model(
+            hsv_img, model_objectBB, channels, mask, numBins,
+            intervals)
 
-            model_built = True
+            # model_built = True
 
         # Grabs next frame
         # frame_0 = cap.read()[1]
 
-        output_frame = cv2.resize(frame_1, (frame_width, frame_height))
+        output_frame = cv2.resize(frame_1, (FRAME_WIDTH, frame_height))
         hsv_img = cv2.cvtColor(output_frame, cv2.COLOR_BGR2HSV)
 
         final_state = color_tracker.update_tracking(hsv_img)[0]
@@ -163,8 +164,9 @@ def get_predictions_for_frame(frame_0, frame_1, detections):
         particles = []
         for i, p in enumerate(particle_centres):
             if i % interval == 0:
-                particles.append(model_objectBB.centered_on(p[0], p[1]).get_coords())
+                particles.append(model_objectBB.centered_on(p[0], p[1]).centroid())
 
-        predictions.append([model_objectBB.centered_on(final_state[0], final_state[1]).get_coords(),particles])
+        predictions.append((detection,particles))
+
 
     return predictions
