@@ -18,6 +18,8 @@ from keras.regularizers import l2
 from keras.optimizers import SGD
 from keras.models import Model
 from keras import backend as K
+from scipy.misc import imresize
+import numpy as np
 
 def generate_model(weight_decay=0.0005):
     '''
@@ -195,7 +197,8 @@ def compile_model(model, *args, **kw):
     print("Model Compile Successful.")
     return model
 
-
+def get_prediction(model, img_1, img_2):
+    return float(model.predict([np.array([imresize(img_1,(160,60,3))]),np.array([imresize(img_2,(160,60,3))])])[0][0])
 
 
 if __name__ == "__main__":

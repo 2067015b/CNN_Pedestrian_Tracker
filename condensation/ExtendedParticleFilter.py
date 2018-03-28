@@ -45,7 +45,7 @@ class ExtendedParticleFilter(ParticleFilter):
                  noise_type='gaussian', noise_param1=None, noise_param2=None,
                  maximum_total_weight=0.0,
                  final_state_decision_method='weighted_average',
-                 noise_dispersion_based_on_weight=False, dispersion_factor=2.0,
+                 noise_dispersion_based_on_weight=False, dispersion_factor=1.0,
                  minimum_dispersion=0.5):
         """ dynamics_matrix is a ns x ns square matrix, where ns = num_states
         particle_lower_bounds is a vector that represents
@@ -94,6 +94,7 @@ class ExtendedParticleFilter(ParticleFilter):
 
     def _apply_noise(self, state):
         """ Applies noise to one particle, according to self.noise_type """
+        state = state[0]
         noise = np.zeros((self._num_states), np.float64)
         current_total_weight = self._weight_sum
         # The dispersion_ratio is multiplied by the original noise parameters to

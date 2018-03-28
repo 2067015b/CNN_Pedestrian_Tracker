@@ -65,6 +65,7 @@ class ParticleFilter(object):
             the state comes from an average of all particles averaged by
             their weights
         """
+
         self._num_particles = num_particles
         self._num_states = num_states
         self._dynamics_matrix = np.array(dynamics_matrix)
@@ -93,7 +94,10 @@ class ParticleFilter(object):
         """ Applies dynamics to one particle, according to
         self.dynamics_matrix.
         """
-        return np.dot(state, self._dynamics_matrix)
+        # print("State: {}".format(state))
+        new = np.dot(state, self._dynamics_matrix)
+        # print("New state: {}".format(new))
+        return new
 
     def _apply_noise(self, state):
         """ Applies noise to one particle, according to self.noise_type """
@@ -163,10 +167,10 @@ class ParticleFilter(object):
                 if init_method == 'uniform':
                     if init_param1 is None or init_param2 is None:
                         particle_state[j] = \
-                            random.uniform(self._particle_lower_bounds[j],
+                            np.random.uniform(self._particle_lower_bounds[j],
                                            self._particle_upper_bounds[j])
                     else:
-                        particle_state[j] = random.uniform(init_param1[j],
+                        particle_state[j] = np.random.uniform(init_param1[j],
                                                            init_param2[j])
                 elif init_method == 'gaussian':
                     if init_param1 is None or init_param2 is None:

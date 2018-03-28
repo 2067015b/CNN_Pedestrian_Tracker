@@ -3,6 +3,7 @@ import math
 from condensation.ExtendedParticleFilter import ExtendedParticleFilter
 from condensation.ParticleFilter import ParticleFilter
 from Config import *
+import numpy as np
 
 
 def particle_weight(state, position=(0, 0), velocity=(0, 0)):
@@ -35,23 +36,24 @@ class Trajectory(object):
         self.id = Trajectory.trajectory_id
 
         self.velocity = (0,0)
-        num_particles = 500
+        num_particles = 100
         num_states = 4
         dynamics_matrix = [[1, 0, 0, 0],
                            [0, 1, 0, 0],
-                           [1, 0, 1, 0],
-                           [0, 1, 0, 1]]
-        lower_bounds = [0, 0, 0, 0]
-        upper_bounds = [FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH,
-                        FRAME_HEIGHT]
+                           [1.3, 0, 1, 0],
+                           [0, 1.3, 0, 1]],
+        # lower_bounds = [0, 0, 0, 0]
+        lower_bounds = [coords[0], coords[1], -20, -20]
+        # upper_bounds = [frame_width, frame_height, frame_width, frame_height]
+        upper_bounds = [coords[2], coords[3], 20, 20]
         noise_type = 'gaussian'
-        noise_param1 = num_states * [0.0]
+        noise_param1 = num_states * [0]
         noise_param2 = num_states * [5.0]
         maximum_total_weight = 1.0 * num_particles
         final_state_decision_method = 'weighted_average'
         noise_dispersion_based_on_weight = True
-        dispersion_factor = 2.0
-        minimum_dispersion = 0.2
+        dispersion_factor = 3.0
+        minimum_dispersion = 0.1
         pf = ExtendedParticleFilter(
             num_particles, num_states, dynamics_matrix, lower_bounds, upper_bounds,
             noise_type, noise_param1, noise_param2, maximum_total_weight,
@@ -59,6 +61,7 @@ class Trajectory(object):
             dispersion_factor, minimum_dispersion)
         particle_init_method = 'uniform'
         pf.init_particles(particle_init_method, lower_bounds, upper_bounds)
+        # print("ID: {}\tAFTER INIT PARTICLES: {}".format(self.id, np.array(pf.particles, dtype=np.int64)))
         pf.update(particle_weight,self.get_centroid(coords), self.velocity)
 
         self.particles = pf.particles
@@ -77,6 +80,8 @@ class Trajectory(object):
 
     def update_velocity(self, new, old):
         self.velocity = (new[0] - old[0], new[1] - old[1])
+        print("New: {}\told: {}".format(new,old))
+        print("Traj {} frame: {}\tvelocity: {}".format(self.id,self.frames[-1],self.velocity))
 
     def get_detections(self, frame=None):
         i = -1
@@ -89,6 +94,10 @@ class Trajectory(object):
 
     def get_centroid(self, coords):
         return coords[0] + ((coords[2] - coords[0]) / 2), coords[1] + ((coords[3] - coords[1]) / 2)
+
+    def get_predictions(self):
+        # print("ID: {}\tCurrent particles: {}".format(self.id,np.array(self.particles, dtype=np.int64)))
+        return self.particles
 
 class Detection(object):
     '''
