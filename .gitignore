@@ -112,3 +112,6 @@ mask/logs/uog20180221T2114/events.out.tfevents.1519247692.DESKTOP-C0DO42L
 mask/logs/
 generate_ans.py
 output_15-03.txt
+04-04-18_no_reid_random_gt.txt
+04-04-18_no_reid_gt_ids.txt
+output_29-03.txt

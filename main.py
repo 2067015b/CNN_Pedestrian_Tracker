@@ -185,63 +185,72 @@ def main(video_path, reid_weights, mask_config='uog', gt=None, use_metrics=True)
                 candidate_detections.append(Detection(detection))
 
         # Match detections in frame 0 with detections in frame 1
-        i = 0
         previous_trajectories = trajectories[str(frame-FRAME_STEP)].copy()
         for trajectory in previous_trajectories:
-            # print("preds: {}".format(preds), flush=True)
             # Compute the area for each preds
-            print("traj {}".format(trajectory.id), flush=True)
+            # print("traj {}".format(trajectory.id), flush=True)
             area_coords = get_area(trajectory.particles)
             det0_coords = trajectory.get_detections(frame-FRAME_STEP)
+            potential = []
             # Array to hold the indices of detections_1 that fall within this area
             # Loop through detections in frame 1
-            for detection_1 in candidate_detections[:]:
-                det1_coords = detection_1.get_coordinates()
-                centroid = get_centroid(det1_coords)
-                print("Candidate Detection centroid: {}".format(centroid), flush=True)
+            for detection_1 in candidate_detections.copy():
 
-                # print("Area coords: {}\tdet_centroid: {}".format(str(area_coords), str(centroid)))
+                centroid = get_centroid(detection_1.get_coordinates())
+                # print("Candidate Detection centroid: {}".format(centroid), flush=True)
 
-                if centroid[0] >= area_coords[0] and centroid[0] <= area_coords[2] and centroid[1] >= area_coords[1] and \
-                                centroid[1] <= area_coords[3]:
-                    # print("Detection_1: {}".format(det1_coords), flush=True)
+                if area_coords[0] <= centroid[0] <= area_coords[2] and area_coords[1] <= centroid[1] <= \
+                        area_coords[3]:
+                    candidate_detections.remove(detection_1)
+                    updated_trajectory = trajectory
+                    trajectories[str(frame - FRAME_STEP)].remove(trajectory)
+                    updated_trajectory.add_detection(frame, detection_1.get_coordinates())
+                    trajectories[str(frame)].append(updated_trajectory)
+                    break
+                    # potential.append(detection_1)
 
-                    # plt.imshow(image[det1_coords[0]:det1_coords[2], det1_coords[1]:det1_coords[3], :])
-                    # plt.show()
-                    similarity = re_id_m.get_prediction(re_id_model, image[det0_coords[0]:det0_coords[2],
-                                                                     det0_coords[1]:det0_coords[3], :],
-                                                        next_image[det1_coords[0]:det1_coords[2],
-                                                        det1_coords[1]:det1_coords[3], :])
-                    print("Similarity traj: {}\tsim: {}".format(trajectory.id,similarity))
-                    # scipy.misc.imsave(str(det0_coords) + "_1.jpg", image[det0_coords[0]:det0_coords[2],
-                    #                                                det0_coords[1]:det0_coords[3], :])
-                    # scipy.misc.imsave(str(det1_coords) + "_2.jpg", next_image[det1_coords[0]:det1_coords[2],
-                    #                                                det1_coords[1]:det1_coords[3], :])
-                    if similarity > SIMILARITY_THRESHOLD:
-                        # print("LENGTH OF CANDIDATE_DETECTIONS: {}".format(len(candidate_detections)), flush=True)
-                        candidate_detections.remove(detection_1)
-                        # print("LENGTH OF CANDIDATE_DETECTIONS: {}".format(len(candidate_detections)), flush=True)
+            # if len(potential) > 1:
+            #     similarities = []
+            #     for detection_1 in potential:
+            #         det1_coords = detection_1.get_coordinates()
+            #         similarities.append(re_id_m.get_prediction(re_id_model, image[det0_coords[0]:det0_coords[2],
+            #                                                          det0_coords[1]:det0_coords[3], :],
+            #                                             next_image[det1_coords[0]:det1_coords[2],
+            #                                             det1_coords[1]:det1_coords[3], :]))
+            #         # print("Similarity traj: {}\tsim: {}".format(trajectory.id,similarity))
+            #         # scipy.misc.imsave(str(det0_coords) + "_1.jpg", image[det0_coords[0]:det0_coords[2],
+            #         #                                                det0_coords[1]:det0_coords[3], :])
+            #         # scipy.misc.imsave(str(det1_coords) + "_2.jpg", next_image[det1_coords[0]:det1_coords[2],
+            #         #                                                det1_coords[1]:det1_coords[3], :])
+            #
+            #     ind = similarities.index(max(similarities))
+            #     detection_1 = potential[ind]
+            #     candidate_detections.remove(detection_1)
+            #     updated_trajectory = trajectory
+            #     trajectories[str(frame - FRAME_STEP)].remove(trajectory)
+            #     updated_trajectory.add_detection(frame, detection_1.get_coordinates())
+            #     trajectories[str(frame)].append(updated_trajectory)
+            #
+            # elif len(potential) == 1:
+            #     candidate_detections.remove(potential[0])
+            #     updated_trajectory = trajectory
+            #     trajectories[str(frame - FRAME_STEP)].remove(trajectory)
+            #     updated_trajectory.add_detection(frame, potential[0].get_coordinates())
+            #     trajectories[str(frame)].append(updated_trajectory)
 
-                        updated_trajectory = trajectories[str(frame - FRAME_STEP)].pop(i)
-                        i -= 1
-                        updated_trajectory.add_detection(frame, det1_coords)
-                        trajectories[str(frame)].append(updated_trajectory)
 
-                        break
-            i += 1
         print("Finished initial matching.", flush=True)
         # Try to match future detections with ones from previous frames
-        for detection_1 in candidate_detections[:]:
+        for detection_1 in candidate_detections.copy():
             det1_coords = detection_1.get_coordinates()
             current_frame = frame - 2 * FRAME_STEP
             matched = False
             while current_frame >= max(frame - 5 * FRAME_STEP, START_FRAME) and not matched:
 
-                i = 0
                 previous_trajectories = trajectories[str(current_frame)].copy()
                 for trajectory in previous_trajectories:
 
-                    print("traj {}".format(trajectory.id))
+                    # print("traj {}".format(trajectory.id))
                     area_coords = get_area(trajectory.particles)
                     # print("traj {} preds: {}".format(trajectory.id,str(trajectory.particles)))
                     centroid = get_centroid(det1_coords)
@@ -258,20 +267,18 @@ def main(video_path, reid_weights, mask_config='uog', gt=None, use_metrics=True)
                         similarity = re_id_m.get_prediction(re_id_model, previous_detection[det0_coords[0]:det0_coords[2],
                                                                          det0_coords[1]:det0_coords[3], :], next_image[det1_coords[0]:det1_coords[2],
                                                                                                             det1_coords[1]:det1_coords[3], :])
-                        print("Similarity traj: {}\tsim: {}".format(trajectory.id,similarity))
+                        print("Similarity traj: {}\tsim: {}".format(trajectory.id,float(similarity)))
 
-                        if similarity > SIMILARITY_THRESHOLD:
+                        if similarity >= SIMILARITY_THRESHOLD:
                             candidate_detections.remove(detection_1)
 
-                            updated_trajectory = trajectories[str(current_frame)].pop(i)
-                            i -= 1
-                            updated_trajectory.add_detection(frame, det1_coords)
-                            trajectories[str(frame)].append(updated_trajectory)
+                            trajectories[str(current_frame)].remove(trajectory)
+                            trajectory.add_detection(frame, det1_coords)
+                            trajectories[str(frame)].append(trajectory)
 
                             matched = True
                             break
 
-                    i += 1
                 current_frame -= FRAME_STEP
 
         # Treat the rest of the detections as new and generate a trajectory object
@@ -294,14 +301,14 @@ def main(video_path, reid_weights, mask_config='uog', gt=None, use_metrics=True)
         # assert len(candidate_detections) == 0
         dets = []
         for trajectory in trajectories[str(frame)]:
-            dets.append(trajectory.get_detections(frame))
+            dets.append(trajectory)
         if use_metrics:
             metric.log(frame, dets)
 
         print(trajectories, flush=True)
         # cv2.destroyAllWindows()
 
-    with open("E:\\Uni\\Level_5_Project\\Tracker\\data\\green\\validation_1.pickle", 'wb') as output_file:
+    with open("E:\\Uni\\Level_5_Project\\Tracker\\data\\green\\validation_3_no_sim.pickle", 'wb') as output_file:
         pickle.dump(trajectories, output_file)
     if use_metrics:
         metric.print_stats()
@@ -341,7 +348,7 @@ def get_area(predictions):
     min_x, max_x = min_x - x_padding, max_x + x_padding
     min_y, max_y = min_y - y_padding, max_y + y_padding
     # print("Predictions: {}".format([[int(j) for j in pred] for pred in predictions]))
-    print("Area: {}".format((min_x, min_y, max_x, max_y)))
+    # print("Area: {}".format((min_x, min_y, max_x, max_y)))
     return (min_x, min_y, max_x, max_y)
 
 
@@ -350,5 +357,5 @@ if __name__ == "__main__":
     # main(*sys.argv[1:], reid_weights="E:\\Uni\\Level_5_Project\\Tracker\\re_id\\cuhk03\\weights\\weights_on_cuhk03_0_0.pickle",)
     main("E:\\Uni\\Level_5_Project\\Tracker\\data\\green\\validation_3.avi",
          reid_weights="E:\\Uni\\Level_5_Project\\Tracker\\re_id\\cuhk03\\weights\\weights_on_cuhk03_0_0.pickle",
-         gt="e:/Uni/Level_5_Project/Tracker/data/green/validation_3/allD.txt",
+         gt="e:/Uni/Level_5_Project/Tracker/data/green/validation_3/allD_id.txt",
          use_metrics=True)
