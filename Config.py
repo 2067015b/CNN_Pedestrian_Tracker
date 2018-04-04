@@ -10,5 +10,5 @@ FRAME_STEP = 12
 
 FRAME_BOUNDARY = 0.1  # Percentual value of the margin for accepting new detections
 
-SIMILARITY_THRESHOLD = 0.0
+SIMILARITY_THRESHOLD = 0.1
 

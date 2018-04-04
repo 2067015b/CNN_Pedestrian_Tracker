@@ -201,42 +201,42 @@ def main(video_path, reid_weights, mask_config='uog', gt=None, use_metrics=True)
 
                 if area_coords[0] <= centroid[0] <= area_coords[2] and area_coords[1] <= centroid[1] <= \
                         area_coords[3]:
-                    candidate_detections.remove(detection_1)
-                    updated_trajectory = trajectory
-                    trajectories[str(frame - FRAME_STEP)].remove(trajectory)
-                    updated_trajectory.add_detection(frame, detection_1.get_coordinates())
-                    trajectories[str(frame)].append(updated_trajectory)
-                    break
-                    # potential.append(detection_1)
+                    # candidate_detections.remove(detection_1)
+                    # updated_trajectory = trajectory
+                    # trajectories[str(frame - FRAME_STEP)].remove(trajectory)
+                    # updated_trajectory.add_detection(frame, detection_1.get_coordinates())
+                    # trajectories[str(frame)].append(updated_trajectory)
+                    # break
+                    potential.append(detection_1)
 
-            # if len(potential) > 1:
-            #     similarities = []
-            #     for detection_1 in potential:
-            #         det1_coords = detection_1.get_coordinates()
-            #         similarities.append(re_id_m.get_prediction(re_id_model, image[det0_coords[0]:det0_coords[2],
-            #                                                          det0_coords[1]:det0_coords[3], :],
-            #                                             next_image[det1_coords[0]:det1_coords[2],
-            #                                             det1_coords[1]:det1_coords[3], :]))
-            #         # print("Similarity traj: {}\tsim: {}".format(trajectory.id,similarity))
-            #         # scipy.misc.imsave(str(det0_coords) + "_1.jpg", image[det0_coords[0]:det0_coords[2],
-            #         #                                                det0_coords[1]:det0_coords[3], :])
-            #         # scipy.misc.imsave(str(det1_coords) + "_2.jpg", next_image[det1_coords[0]:det1_coords[2],
-            #         #                                                det1_coords[1]:det1_coords[3], :])
-            #
-            #     ind = similarities.index(max(similarities))
-            #     detection_1 = potential[ind]
-            #     candidate_detections.remove(detection_1)
-            #     updated_trajectory = trajectory
-            #     trajectories[str(frame - FRAME_STEP)].remove(trajectory)
-            #     updated_trajectory.add_detection(frame, detection_1.get_coordinates())
-            #     trajectories[str(frame)].append(updated_trajectory)
-            #
-            # elif len(potential) == 1:
-            #     candidate_detections.remove(potential[0])
-            #     updated_trajectory = trajectory
-            #     trajectories[str(frame - FRAME_STEP)].remove(trajectory)
-            #     updated_trajectory.add_detection(frame, potential[0].get_coordinates())
-            #     trajectories[str(frame)].append(updated_trajectory)
+            if len(potential) > 1:
+                similarities = []
+                for detection_1 in potential:
+                    det1_coords = detection_1.get_coordinates()
+                    similarities.append(re_id_m.get_prediction(re_id_model, image[det0_coords[0]:det0_coords[2],
+                                                                     det0_coords[1]:det0_coords[3], :],
+                                                        next_image[det1_coords[0]:det1_coords[2],
+                                                        det1_coords[1]:det1_coords[3], :]))
+                    # print("Similarity traj: {}\tsim: {}".format(trajectory.id,similarity))
+                    # scipy.misc.imsave(str(det0_coords) + "_1.jpg", image[det0_coords[0]:det0_coords[2],
+                    #                                                det0_coords[1]:det0_coords[3], :])
+                    # scipy.misc.imsave(str(det1_coords) + "_2.jpg", next_image[det1_coords[0]:det1_coords[2],
+                    #                                                det1_coords[1]:det1_coords[3], :])
+
+                ind = similarities.index(max(similarities))
+                detection_1 = potential[ind]
+                candidate_detections.remove(detection_1)
+                updated_trajectory = trajectory
+                trajectories[str(frame - FRAME_STEP)].remove(trajectory)
+                updated_trajectory.add_detection(frame, detection_1.get_coordinates())
+                trajectories[str(frame)].append(updated_trajectory)
+
+            elif len(potential) == 1:
+                candidate_detections.remove(potential[0])
+                updated_trajectory = trajectory
+                trajectories[str(frame - FRAME_STEP)].remove(trajectory)
+                updated_trajectory.add_detection(frame, potential[0].get_coordinates())
+                trajectories[str(frame)].append(updated_trajectory)
 
 
         print("Finished initial matching.", flush=True)
