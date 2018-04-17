@@ -116,3 +116,14 @@ output_15-03.txt
 04-04-18_no_reid_gt_ids.txt
 output_29-03.txt
 04-04-18_with_reid_gt_ids.txt
+17-04-18_mask_only_occluded_both.txt
+16-04-18_whole_system_occluded_val.txt
+16-04-18_whole_system_occluded_both.txt
+11-04-18_whole_system_occl_weights.txt
+11-04-18_whole_system_occl_val.txt
+11-04-18_whole_system_occl_both.txt
+11-04-18_whole_system.txt
+11-04-18_old_tracker_no_ids.txt
+10-04-18_no_reid_mask_fixed_ids_occl_val.txt
+10-04-18_no_reid_mask_fixed_ids_occl_both.txt
+04-04-18_only_mask_fixed_ids.txt

@@ -34,10 +34,12 @@ class Metric:
         distances = mm.distances.iou_matrix(gt_detection_boxes,detection_boxes,max_iou=0.5)
         print(distances)
 
-        # alphabet = 'abcdefghijklmnopqrstuvxyz'
         gt_detections = [det[-1] for det in gt_detections]
-        print(gt_detections)
         detections = [det.id for det in detections]
+
+        # ID's set to -1 when testing only detection performance
+        # gt_detections = [-1 for det in gt_detections]
+        # detections = [-1 for det in detections]
 
         self.accumulator.update(gt_detections,detections,distances)
 
@@ -56,6 +58,7 @@ class Metric:
         print(strsummary)
 
         print(mh.compute(self.accumulator, metrics=['num_frames', 'mota', 'motp'], name='acc'))
+        return "{}\n{}".format(strsummary,mh.compute(self.accumulator, metrics=['num_frames', 'mota', 'motp'], name='acc'))
 
 
 

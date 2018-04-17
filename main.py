@@ -139,11 +139,11 @@ def main(video_path, reid_weights, mask_config='uog', gt=None, use_metrics=True)
 
     # image = imresize(image,(FRAME_HEIGHT,FRAME_WIDTH,3))
     # Run the detection on initial frame
-    results_0 = model.detect([image], verbose=1)
+    results_1 = model.detect([image], verbose=1)
 
     # print("The results format: {}".format(results_0))
     trajectories[str(frame)] = []
-    for detection, cls in zip(results_0[0]['rois'], results_0[0]['class_ids']):
+    for detection, cls in zip(results_1[0]['rois'], results_1[0]['class_ids']):
 
         # print(class_names[cls])
         if class_names[cls] == 'person':
@@ -151,7 +151,14 @@ def main(video_path, reid_weights, mask_config='uog', gt=None, use_metrics=True)
             # print(detection, flush=True)
             trajectories[str(frame)].append(new_traj)
 
-    while (frame <= sequence.get(cv2.CAP_PROP_FRAME_COUNT) - FRAME_STEP):
+    dets = []
+    for trajectory in trajectories[str(frame)]:
+        dets.append(trajectory)
+    if use_metrics:
+        metric.log(frame, dets)
+
+
+    while (frame < sequence.get(cv2.CAP_PROP_FRAME_COUNT) - FRAME_STEP):
     # while (frame <= 1249):
 
         # Read the next frame
@@ -160,11 +167,11 @@ def main(video_path, reid_weights, mask_config='uog', gt=None, use_metrics=True)
         ret, next_image = sequence.read()
         # next_image = imresize(next_image, (FRAME_HEIGHT, FRAME_WIDTH, 3))
 
-        trajectories[str(frame)] = []
+        for detection, cls in zip(results_1[0]['rois'], results_1[0]['class_ids']):
 
-        # Run the detection on the next frame
-        results_1 = model.detect([next_image], verbose=1)
-        # predictions = get_predictions_for_frame(image, next_image, trajectories[str(frame - FRAME_STEP)])
+            # print(class_names[cls])
+            if class_names[cls] == 'person':
+                cv2.rectangle(image, (detection[1], detection[0]), (detection[3], detection[2]), (255, 255, 0), 3)
 
         for trajectory in trajectories[str(frame - FRAME_STEP)]:
             coords = trajectory.get_detections()
@@ -172,9 +179,14 @@ def main(video_path, reid_weights, mask_config='uog', gt=None, use_metrics=True)
             font = cv2.FONT_HERSHEY_SIMPLEX
             for prediction in trajectory.get_predictions():
                 cv2.circle(image, (int(prediction[1]), int(prediction[0])), 2, (255, 0, 0), 1)
-            area_coords = get_area(trajectory.get_predictions())
+            area_coords = get_percentile_area(trajectory.get_predictions())
             cv2.rectangle(image, (int(area_coords[1]), int(area_coords[0])), (int(area_coords[3]), int(area_coords[2])), (255, 0, 255), 1)
             cv2.putText(image, str(trajectory.id), (coords[1]+3, coords[0]+15), font, 0.4, (0, 0, 255), 1, cv2.LINE_AA)
+
+        trajectories[str(frame)] = []
+
+        # Run the detection on the next frame
+        results_1 = model.detect([next_image], verbose=1)
 
         frame_name = "E:\\Uni\\Level_5_Project\\Tracker\\data\\green\\validation_3_{}.jpg".format(frame-FRAME_STEP)
         cv2.imwrite(frame_name, image)
@@ -184,12 +196,19 @@ def main(video_path, reid_weights, mask_config='uog', gt=None, use_metrics=True)
             if class_names[cls] == 'person':
                 candidate_detections.append(Detection(detection))
 
+        # TODO: Metrics for mask HERE
+        # dets = []
+        # for detc in candidate_detections:
+        #     dets.append(Trajectory(frame,detc.get_coordinates()))
+        # if use_metrics:
+        #     metric.log(frame, dets)
+
         # Match detections in frame 0 with detections in frame 1
         previous_trajectories = trajectories[str(frame-FRAME_STEP)].copy()
         for trajectory in previous_trajectories:
             # Compute the area for each preds
             # print("traj {}".format(trajectory.id), flush=True)
-            area_coords = get_area(trajectory.particles)
+            area_coords = get_percentile_area(trajectory.particles)
             det0_coords = trajectory.get_detections(frame-FRAME_STEP)
             potential = []
             # Array to hold the indices of detections_1 that fall within this area
@@ -245,13 +264,13 @@ def main(video_path, reid_weights, mask_config='uog', gt=None, use_metrics=True)
             det1_coords = detection_1.get_coordinates()
             current_frame = frame - 2 * FRAME_STEP
             matched = False
-            while current_frame >= max(frame - 5 * FRAME_STEP, START_FRAME) and not matched:
+            while current_frame >= max(frame - 8 * FRAME_STEP, START_FRAME) and not matched:
 
                 previous_trajectories = trajectories[str(current_frame)].copy()
                 for trajectory in previous_trajectories:
 
                     # print("traj {}".format(trajectory.id))
-                    area_coords = get_area(trajectory.particles)
+                    area_coords = get_percentile_area(trajectory.particles)
                     # print("traj {} preds: {}".format(trajectory.id,str(trajectory.particles)))
                     centroid = get_centroid(det1_coords)
                     # print("Area coords: {}\tdet_centroid: {}".format(str(area_coords), str(centroid)))
@@ -287,23 +306,26 @@ def main(video_path, reid_weights, mask_config='uog', gt=None, use_metrics=True)
             # print("Format of det1_coords: {}".format(det1_coords), flush=True)
 
             # Check if the detection is at the edge of the screen only then create the new trajectory
-            # centroid = get_centroid(det1_coords)
-            # if (centroid[0] <= FRAME_WIDTH * FRAME_BOUNDARY or centroid[
-            #     0] >= FRAME_WIDTH - FRAME_WIDTH * FRAME_BOUNDARY) and \
-            #         (centroid[1] <= FRAME_HEIGHT * FRAME_BOUNDARY or centroid[
-            #             1] >= FRAME_HEIGHT - FRAME_HEIGHT * FRAME_BOUNDARY):
-            trajectories[str(frame)].append(Trajectory(frame, det1_coords))
+            centroid = get_centroid(det1_coords)
+            print("CENTROID: {}\tFRAME_WIDTH: {}\tFRAME_HEIGHT: {}".format(centroid,FRAME_WIDTH,FRAME_HEIGHT))
+            if (centroid[0] <= FRAME_WIDTH * FRAME_BOUNDARY or centroid[
+                0] >= FRAME_WIDTH - FRAME_WIDTH * FRAME_BOUNDARY) or \
+                    (centroid[1] <= FRAME_HEIGHT * FRAME_BOUNDARY or centroid[
+                        1] >= FRAME_HEIGHT - FRAME_HEIGHT * FRAME_BOUNDARY):
+                trajectories[str(frame)].append(Trajectory(frame, det1_coords))
 
         # cv2.imshow('output', image)
         # cv2.waitKey(delay=1)
 
         image = next_image
-        # assert len(candidate_detections) == 0
-        dets = []
-        for trajectory in trajectories[str(frame)]:
-            dets.append(trajectory)
+
+        # TODO: Metrics for the whole system
         if use_metrics:
-            metric.log(frame, dets)
+            dets = []
+            for trajectory in trajectories[str(frame)]:
+                dets.append(trajectory)
+            if use_metrics:
+                metric.log(frame, dets)
 
         print(trajectories, flush=True)
         # cv2.destroyAllWindows()
@@ -311,7 +333,9 @@ def main(video_path, reid_weights, mask_config='uog', gt=None, use_metrics=True)
     with open("E:\\Uni\\Level_5_Project\\Tracker\\data\\green\\validation_3_no_sim.pickle", 'wb') as output_file:
         pickle.dump(trajectories, output_file)
     if use_metrics:
-        metric.print_stats()
+        with open("e:/Uni/Level_5_Project/Tracker/17-04-18_mask_only_occluded_both.txt",'w') as out:
+            out.write(metric.print_stats())
+
 
 
 def get_centroid(detection):
@@ -319,11 +343,10 @@ def get_centroid(detection):
                                                                                     detection[3] - detection[1]) / 2))
 
 
-def get_area(predictions):
+def get_hard_area(predictions):
     min_y = FRAME_WIDTH
     max_y = -FRAME_WIDTH
 
-    print
     min_x = FRAME_HEIGHT
     max_x = -FRAME_HEIGHT
 
@@ -347,15 +370,21 @@ def get_area(predictions):
 
     min_x, max_x = min_x - x_padding, max_x + x_padding
     min_y, max_y = min_y - y_padding, max_y + y_padding
-    # print("Predictions: {}".format([[int(j) for j in pred] for pred in predictions]))
-    # print("Area: {}".format((min_x, min_y, max_x, max_y)))
     return (min_x, min_y, max_x, max_y)
+
+def get_percentile_area(predictions):
+    preds = np.array(predictions)
+    mean = preds.mean(axis=0)
+    std = preds.std(axis=0)
+
+    buffer = 2
+    return (mean[0] - (std[0] * buffer),mean[1] - std[1]*buffer, mean[0] + std[0]*buffer, mean[1] + std[1]*buffer)
 
 
 if __name__ == "__main__":
 
     # main(*sys.argv[1:], reid_weights="E:\\Uni\\Level_5_Project\\Tracker\\re_id\\cuhk03\\weights\\weights_on_cuhk03_0_0.pickle",)
-    main("E:\\Uni\\Level_5_Project\\Tracker\\data\\green\\validation_3.avi",
+    main("E:\\Uni\\Level_5_Project\\Tracker\\data\\green\\validation_3\\occluded\\consistent\\validation_3.avi",
          reid_weights="E:\\Uni\\Level_5_Project\\Tracker\\re_id\\cuhk03\\weights\\weights_on_cuhk03_0_0.pickle",
-         gt="e:/Uni/Level_5_Project/Tracker/data/green/validation_3/allD_id.txt",
+         gt="e:/Uni/Level_5_Project/Tracker/data/green/validation_3/occluded/consistent/allD_c.txt",
          use_metrics=True)
