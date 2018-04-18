@@ -94,7 +94,7 @@ class ExtendedParticleFilter(ParticleFilter):
 
     def _apply_noise(self, state):
         """ Applies noise to one particle, according to self.noise_type """
-        state = state[0]
+        # state = state[0]
         noise = np.zeros((self._num_states), np.float64)
         current_total_weight = self._weight_sum
         # The dispersion_ratio is multiplied by the original noise parameters to

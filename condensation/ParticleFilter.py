@@ -95,7 +95,7 @@ class ParticleFilter(object):
         self.dynamics_matrix.
         """
         # print("State: {}".format(state))
-        new = np.dot(state, self._dynamics_matrix)
+        new = np.dot(state, self._dynamics_matrix).tolist()
         # print("New state: {}".format(new))
         return new
 

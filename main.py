@@ -333,7 +333,7 @@ def main(video_path, reid_weights, mask_config='uog', gt=None, use_metrics=True)
     with open("E:\\Uni\\Level_5_Project\\Tracker\\data\\green\\validation_3_no_sim.pickle", 'wb') as output_file:
         pickle.dump(trajectories, output_file)
     if use_metrics:
-        with open("e:/Uni/Level_5_Project/Tracker/17-04-18_mask_only_occluded_both.txt",'w') as out:
+        with open("e:/Uni/Level_5_Project/Tracker/17-04-18_while_system_no_vel.txt",'w') as out:
             out.write(metric.print_stats())
 
 
@@ -384,7 +384,7 @@ def get_percentile_area(predictions):
 if __name__ == "__main__":
 
     # main(*sys.argv[1:], reid_weights="E:\\Uni\\Level_5_Project\\Tracker\\re_id\\cuhk03\\weights\\weights_on_cuhk03_0_0.pickle",)
-    main("E:\\Uni\\Level_5_Project\\Tracker\\data\\green\\validation_3\\occluded\\consistent\\validation_3.avi",
+    main("E:\\Uni\\Level_5_Project\\Tracker\\data\\green\\validation_3.avi",
          reid_weights="E:\\Uni\\Level_5_Project\\Tracker\\re_id\\cuhk03\\weights\\weights_on_cuhk03_0_0.pickle",
-         gt="e:/Uni/Level_5_Project/Tracker/data/green/validation_3/occluded/consistent/allD_c.txt",
+         gt="e:/Uni/Level_5_Project/Tracker/data/green/validation_3/allD_id.txt",
          use_metrics=True)
